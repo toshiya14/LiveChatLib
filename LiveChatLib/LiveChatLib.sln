@@ -7,20 +7,40 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveChatLib.Standard", "Liv
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveChatTestConsole.Core", "LiveChatTestConsole.Core\LiveChatTestConsole.Core.csproj", "{C61DB0B6-9821-4C50-996E-0EAD2F4DEAC4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveChatApp.WPF", "LiveChatApp.WPF\LiveChatApp.WPF.csproj", "{2CB78E3D-6743-4393-9EE4-369098A72D75}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{B2056C1A-5160-4CCC-AFE2-3703342829D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B2056C1A-5160-4CCC-AFE2-3703342829D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2056C1A-5160-4CCC-AFE2-3703342829D7}.Debug|x64.ActiveCfg = Debug|x64
+		{B2056C1A-5160-4CCC-AFE2-3703342829D7}.Debug|x64.Build.0 = Debug|x64
 		{B2056C1A-5160-4CCC-AFE2-3703342829D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B2056C1A-5160-4CCC-AFE2-3703342829D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2056C1A-5160-4CCC-AFE2-3703342829D7}.Release|x64.ActiveCfg = Release|x64
+		{B2056C1A-5160-4CCC-AFE2-3703342829D7}.Release|x64.Build.0 = Release|x64
 		{C61DB0B6-9821-4C50-996E-0EAD2F4DEAC4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C61DB0B6-9821-4C50-996E-0EAD2F4DEAC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C61DB0B6-9821-4C50-996E-0EAD2F4DEAC4}.Debug|x64.ActiveCfg = Debug|x64
+		{C61DB0B6-9821-4C50-996E-0EAD2F4DEAC4}.Debug|x64.Build.0 = Debug|x64
 		{C61DB0B6-9821-4C50-996E-0EAD2F4DEAC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C61DB0B6-9821-4C50-996E-0EAD2F4DEAC4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C61DB0B6-9821-4C50-996E-0EAD2F4DEAC4}.Release|x64.ActiveCfg = Release|x64
+		{C61DB0B6-9821-4C50-996E-0EAD2F4DEAC4}.Release|x64.Build.0 = Release|x64
+		{2CB78E3D-6743-4393-9EE4-369098A72D75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CB78E3D-6743-4393-9EE4-369098A72D75}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CB78E3D-6743-4393-9EE4-369098A72D75}.Debug|x64.ActiveCfg = Debug|x64
+		{2CB78E3D-6743-4393-9EE4-369098A72D75}.Debug|x64.Build.0 = Debug|x64
+		{2CB78E3D-6743-4393-9EE4-369098A72D75}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CB78E3D-6743-4393-9EE4-369098A72D75}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2CB78E3D-6743-4393-9EE4-369098A72D75}.Release|x64.ActiveCfg = Release|x64
+		{2CB78E3D-6743-4393-9EE4-369098A72D75}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
