@@ -35,6 +35,11 @@ namespace LiveChatLib.Bilibili
             Body = body;
         }
 
+        public Package(byte[] buffer)
+        {
+            LoadFromByteArray(buffer);
+        }
+
         public Package(MsgType msgType, string content, Encoding encoding = default(Encoding), short protover = 0x1, short headlen = 0x10, int sequence = 0x1)
         {
             HeadLength = headlen;
