@@ -73,6 +73,30 @@ namespace LiveChatLib.Bilibili
                             this.MsgType = MessageType.Gift;
                             this.AvatarUrl = this.meta["face"];
                             break;
+
+                        case "PREPARING":
+                            this.meta["roomid"] = obj["roomid"].ToString();
+                            this.SenderName = "server";
+                            this.MsgType = MessageType.System;
+                            break;
+
+                        case "LIVE":
+                            this.meta["roomid"] = obj["roomid"].ToString();
+                            this.SenderName = "server";
+                            this.MsgType = MessageType.System;
+                            break;
+
+                        case "DANMU_MSG":
+                            this.meta["uname"] = obj["info"][2][1].ToString();
+                            this.meta["uid"] = obj["info"][2][0].ToString();
+                            this.meta["flag1"] = obj["info"][2][2].ToObject<int>().ToString();
+                            this.meta["flag2"] = obj["info"][2][3].ToObject<int>().ToString();
+                            this.meta["flag3"] = obj["info"][2][4].ToObject<int>().ToString();
+                            this.meta["timestamp"] = obj["info"][0][4].ToObject<int>().ToString();
+                            this.meta["msg"] = obj["info"][1].ToString();
+                            this.SenderName = this.meta["uname"];
+                            this.MsgType = MessageType.Danmaku;
+                            break;
                     }
                     break;
             }

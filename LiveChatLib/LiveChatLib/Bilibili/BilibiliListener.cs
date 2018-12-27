@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+using LiveChatLib.Common;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -12,9 +13,20 @@ namespace LiveChatLib.Bilibili
     {
         public int LiveRoomID { get; set; }
         public bool StopListenToken { get; set; }
+        public FixedSizedQueue<BilibiliMessage> MessageQueue { get; set; }
+
         public async Task KeepMessage(MessageBase message)
         {
-            throw new NotImplementedException();
+            var bmsg = message as BilibiliMessage;
+            if (bmsg.MsgType != MessageType.System)
+            {
+                if (string.IsNullOrEmpty(bmsg.AvatarUrl))
+                {
+                    if (bmsg.meta["uid"] != null) {
+
+                    }
+                }
+            }
         }
 
         public async Task LoopListening()
@@ -26,9 +38,10 @@ namespace LiveChatLib.Bilibili
             
             using (var ws = new WebSocketSharp.WebSocket("wss://broadcastlv.chat.bilibili.com/sub"))
             {
+                ws.OnMessage += Ws_OnMessage;
                 while (!StopListenToken)
                 {
-                    ws.OnMessage += Ws_OnMessage;
+                    
                 }
             }
         }
@@ -49,6 +62,18 @@ namespace LiveChatLib.Bilibili
                 result = await client.DownloadStringTaskAsync(url);
             }
             return result;
+        }
+
+        private void SendHeartBeat(WebSocketSharp.WebSocket ws)
+        {
+            var package = new Package(MsgType.ClientHeart, new byte[0]);
+            var data = package.Body;
+            ws.SendAsync(data, null);
+        }
+
+        private void CacheFace(string uid)
+        {
+            
         }
     }
 }
