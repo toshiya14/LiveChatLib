@@ -18,13 +18,13 @@ namespace LiveChatLib.Bilibili
         public Encoding BodyEncoding { get; set; }
         public string Content { get => BodyEncoding.GetString(Body); set => _body = BodyEncoding.GetBytes(value); }
 
-        public Package(MsgType msgType, byte[] body, Encoding encoding = default(Encoding), short protover = 0x1, short headlen = 0x10, int sequence = 0x1)
+        public Package(MsgType msgType, byte[] body, Encoding encoding = null, short protover = 0x1, short headlen = 0x10, int sequence = 0x1)
         {
             HeadLength = headlen;
             ProtoVer = protover;
             MessageType = msgType;
             Sequence = sequence;
-            if (encoding == default(Encoding))
+            if (encoding == null)
             {
                 BodyEncoding = Encoding.UTF8;
             }
@@ -35,18 +35,26 @@ namespace LiveChatLib.Bilibili
             Body = body;
         }
 
-        public Package(byte[] buffer)
+        public Package(byte[] buffer, Encoding encoding = null)
         {
+            if (encoding == null)
+            {
+                BodyEncoding = Encoding.UTF8;
+            }
+            else
+            {
+                BodyEncoding = encoding;
+            }
             LoadFromByteArray(buffer);
         }
 
-        public Package(MsgType msgType, string content, Encoding encoding = default(Encoding), short protover = 0x1, short headlen = 0x10, int sequence = 0x1)
+        public Package(MsgType msgType, string content, Encoding encoding = null, short protover = 0x1, short headlen = 0x10, int sequence = 0x1)
         {
             HeadLength = headlen;
             ProtoVer = protover;
             MessageType = msgType;
             Sequence = sequence;
-            if (encoding == default(Encoding))
+            if (encoding == null)
             {
                 BodyEncoding = Encoding.UTF8;
             }
@@ -64,6 +72,7 @@ namespace LiveChatLib.Bilibili
             {
                 writer.Write(Length.ToByteArray(true));
                 writer.Write(HeadLength.ToByteArray(true));
+                writer.Write(ProtoVer.ToByteArray(true));
                 writer.Write(((int)MessageType).ToByteArray(true));
                 writer.Write(Sequence.ToByteArray(true));
                 writer.Write(Body);
@@ -88,7 +97,7 @@ namespace LiveChatLib.Bilibili
                 var command = reader.ReadBytes(4).ByteToInt32(true);
                 var sequence = reader.ReadBytes(4).ByteToInt32(true);
                 ms.Seek(headlength, SeekOrigin.Begin);
-                var body = reader.ReadBytes(int.MaxValue);
+                var body = reader.ReadBytes(length-HeadLength);
                 var result = new Package((MsgType)command, body, Encoding.UTF8, protover, headlength, sequence);
 
                 // Set the result to current instance.
