@@ -16,7 +16,7 @@ namespace LiveChatLib.Bilibili
 
         public bool StopToken = false;
 
-        public void OnReceiveMessage(WebSocketBehavior app, JToken data)
+        public void OnReceiveMessage(WebSocketSessionManager app, JToken data)
         {
             // Do Nothing.
         }
@@ -28,11 +28,10 @@ namespace LiveChatLib.Bilibili
         {
             StopToken = true;
         }
-        public void OnWebSocketOpen(WebSocketBehavior app)
+        public void OnWebSocketOpen(WebSocketSessionManager app)
         {
-            var chatapp = app as ChatLogApp;
             var results = Database.FetchLatestComments(5);
-            chatapp.SendMessage(JsonConvert.SerializeObject(new { type = "msg", data = results }));
+            app.Broadcast(JsonConvert.SerializeObject(new { type = "msg", data = results }));
         }
         public void OnWork(WebSocketServer server)
         {

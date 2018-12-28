@@ -96,7 +96,7 @@ namespace LiveChatLib
             var tasks = new List<Task>();
             foreach(var s in PushService.Services)
             {
-                tasks.Add(Task.Factory.StartNew(()=>s.OnWebSocketOpen(this)));
+                tasks.Add(Task.Factory.StartNew(()=>s.OnWebSocketOpen(this.Sessions)));
             }
             Task.WaitAll(tasks.ToArray());
         }
@@ -110,7 +110,7 @@ namespace LiveChatLib
             {
                 if (s.MessageFlag.Contains(flag))
                 {
-                    tasks.Add(Task.Factory.StartNew(() => s.OnReceiveMessage(this, json["data"])));
+                    tasks.Add(Task.Factory.StartNew(() => s.OnReceiveMessage(this.Sessions, json["data"])));
                 }
             }
             Task.WaitAll(tasks.ToArray());
@@ -122,8 +122,8 @@ namespace LiveChatLib
         string[] MessageFlag { get; }
         void OnServiceLoad();
         void OnServiceStop();
-        void OnWebSocketOpen(WebSocketBehavior app);
-        void OnReceiveMessage(WebSocketBehavior app, JToken data);
+        void OnWebSocketOpen(WebSocketSessionManager app);
+        void OnReceiveMessage(WebSocketSessionManager app, JToken data);
         void OnWork(WebSocketServer server);
     }
 }

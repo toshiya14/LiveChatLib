@@ -128,12 +128,12 @@ namespace LiveChatLib.Bilibili
             var json = JToken.Parse(result);
             var user = new User
             {
-                BirthDay = json["data"]["birthday"].ToString(),
-                Face = json["data"]["face"].ToString(),
-                Level = json["data"]["level_info"]?["current_level"].ToObject<int>() ?? -1,
-                Id = json["data"]["mid"].ToObject<int>(),
-                Name = json["data"]["name"].ToString(),
-                Sex = json["data"]["sex"].ToString()
+                BirthDay = json["data"]["birthday"]?.ToString() ?? "保密",
+                Face = json["data"]["face"]?.ToString() ?? "保密",
+                Level = json["data"]["level_info"]?["current_level"]?.ToObject<int>() ?? -1,
+                Id = json["data"]["mid"]?.ToObject<int>() ?? -1,
+                Name = json["data"]["name"]?.ToString() ?? "保密",
+                Sex = json["data"]["sex"]?.ToString() ?? "保密"
             };
             Database.SaveUserInformation(user);
             return user;

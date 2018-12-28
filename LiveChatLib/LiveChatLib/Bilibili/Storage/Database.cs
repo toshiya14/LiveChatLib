@@ -18,25 +18,28 @@ namespace LiveChatLib.Bilibili.Storage
         /// <param name="user">The user.</param>
         public static void SaveUserInformation(User user)
         {
-            using (var db = new LiteDatabase(UserDatabasePath))
+            lock (UserDatabasePath)
             {
-                var users = db.GetCollection<User>("users");
-                var results = users.Find(x => x.Id == user.Id);
-                if (results.Count() == 0)
+                using (var db = new LiteDatabase(UserDatabasePath))
                 {
-                    users.Insert(user);
-                    users.EnsureIndex(x => x.Id);
-                    users.EnsureIndex(x => x.Name);
-                }
-                else
-                {
-                    var toUpdate = results.First();
-                    toUpdate.BirthDay = user.BirthDay;
-                    toUpdate.Face = user.Face;
-                    toUpdate.Level = user.Level;
-                    toUpdate.Name = user.Name;
-                    toUpdate.Sex = user.Sex;
-                    users.Update(toUpdate);
+                    var users = db.GetCollection<User>("users");
+                    var results = users.Find(x => x.Id == user.Id);
+                    if (results.Count() == 0)
+                    {
+                        users.Insert(user);
+                        users.EnsureIndex(x => x.Id);
+                        users.EnsureIndex(x => x.Name);
+                    }
+                    else
+                    {
+                        var toUpdate = results.First();
+                        toUpdate.BirthDay = user.BirthDay;
+                        toUpdate.Face = user.Face;
+                        toUpdate.Level = user.Level;
+                        toUpdate.Name = user.Name;
+                        toUpdate.Sex = user.Sex;
+                        users.Update(toUpdate);
+                    }
                 }
             }
         }
@@ -48,49 +51,58 @@ namespace LiveChatLib.Bilibili.Storage
         /// <returns></returns>
         public static User PickUserInformation(int mid)
         {
-            using (var db = new LiteDatabase(UserDatabasePath))
+
+            lock (UserDatabasePath)
             {
-                var users = db.GetCollection<User>();
-                var results = users.Find(x => x.Id == mid);
-                if (results.Count() == 0)
+                using (var db = new LiteDatabase(UserDatabasePath))
                 {
-                    return null;
-                }
-                else
-                {
-                    return results.First();
+                    var users = db.GetCollection<User>();
+                    var results = users.Find(x => x.Id == mid);
+                    if (results.Count() == 0)
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        return results.First();
+                    }
                 }
             }
         }
 
         public static void KeepMessage(BilibiliMessage message)
         {
-            using (var db = new LiteDatabase(ChatLogDatabasePath))
+            lock (ChatLogDatabasePath)
             {
-                var chats = db.GetCollection<BilibiliMessage>();
-                chats.Insert(message);
-                chats.EnsureIndex(x => x.SenderName);
-                chats.EnsureIndex(x => x.ReceiveTime);
-                chats.EnsureIndex(x => x.SenderId);
+                using (var db = new LiteDatabase(ChatLogDatabasePath))
+                {
+                    var chats = db.GetCollection<BilibiliMessage>();
+                    chats.Insert(message);
+                    chats.EnsureIndex(x => x.SenderName);
+                    chats.EnsureIndex(x => x.ReceiveTime);
+                    chats.EnsureIndex(x => x.SenderId);
+                }
             }
         }
 
         public static IList<BilibiliMessage> FetchLatestComments(int count)
         {
-            using (var db = new LiteDatabase(ChatLogDatabasePath))
+            lock (ChatLogDatabasePath)
             {
-                var chats = db.GetCollection<BilibiliMessage>();
-                var query = Query.And(
-                               Query.All("ReceiveTime", Query.Descending),
-                               Query.Or(
-                                   Query.EQ("MsgType", (int)MessageType.Danmaku),
-                                   Query.EQ("MsgType", (int)MessageType.Gift)
-                               )
-                            );
-                var results = chats.Find(query, 0, 5);
-                return results.ToList();
+                using (var db = new LiteDatabase(ChatLogDatabasePath))
+                {
+                    var chats = db.GetCollection<BilibiliMessage>();
+                    var query = Query.And(
+                                   Query.All("ReceiveTime", Query.Descending),
+                                   Query.Or(
+                                       Query.EQ("MsgType", (int)MessageType.Danmaku),
+                                       Query.EQ("MsgType", (int)MessageType.Gift)
+                                   )
+                                );
+                    var results = chats.Find(query, 0, 5);
+                    return results.ToList();
+                }
             }
         }
-
     }
 }
