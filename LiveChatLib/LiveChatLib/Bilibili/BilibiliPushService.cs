@@ -14,6 +14,9 @@ namespace LiveChatLib.Bilibili
             }
         }
 
+        /// <summary>
+        /// Set StopToken to true, to stop looping after current working loop.
+        /// </summary>
         public bool StopToken = false;
 
         public void OnReceiveMessage(WebSocketSessionManager app, JToken data)
@@ -28,11 +31,13 @@ namespace LiveChatLib.Bilibili
         {
             StopToken = true;
         }
+
         public void OnWebSocketOpen(WebSocketSessionManager app)
         {
             var results = Database.FetchLatestComments(5);
             app.Broadcast(JsonConvert.SerializeObject(new { type = "msg", data = results }));
         }
+
         public void OnWork(WebSocketServer server)
         {
             var listener = new BilibiliListener();
@@ -45,6 +50,19 @@ namespace LiveChatLib.Bilibili
                             {
                                 type = "msg",
                                 data = new[] { message }
+                            }
+                        )
+                    );
+                };
+            listener.OnBadCommunication +=
+                ws =>
+                {
+                    server.WebSocketServices["/app"].Sessions.Broadcast(
+                        JsonConvert.SerializeObject(
+                            new
+                            {
+                                type = "sys",
+                                data = new[] { new { msg = "彈幕引擎與伺服器斷開連結! TwT" } }
                             }
                         )
                     );

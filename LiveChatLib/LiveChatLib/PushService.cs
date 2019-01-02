@@ -64,8 +64,6 @@ namespace LiveChatLib
                 return;
             }
             OnStop();
-
-            this.Dispose();
         }
 
         public void Dispose()
@@ -119,11 +117,38 @@ namespace LiveChatLib
 
     public interface IPushService
     {
+        /// <summary>
+        /// Set the message flags, if message contains one of these flags, OnReveciveMessage would be called.
+        /// </summary>
         string[] MessageFlag { get; }
+
+        /// <summary>
+        /// Called when service loading.
+        /// </summary>
         void OnServiceLoad();
+
+        /// <summary>
+        /// Called when service stopping.
+        /// </summary>
         void OnServiceStop();
+
+        /// <summary>
+        /// Called when WebSocket open.
+        /// </summary>
+        /// <param name="app">The application.</param>
         void OnWebSocketOpen(WebSocketSessionManager app);
+
+        /// <summary>
+        /// Called when receiving message.
+        /// </summary>
+        /// <param name="app">The WebSocketSessionManager instance.</param>
+        /// <param name="data">The message body.</param>
         void OnReceiveMessage(WebSocketSessionManager app, JToken data);
+
+        /// <summary>
+        /// Main working loop.
+        /// </summary>
+        /// <param name="server">The server.</param>
         void OnWork(WebSocketServer server);
     }
 }

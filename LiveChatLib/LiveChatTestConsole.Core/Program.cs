@@ -11,11 +11,14 @@ namespace LiveChatTestConsole
     {
         static void Main(string[] args)
         {
-            var ps = new PushService();
-            ps.Register<BilibiliPushService>();
-            ps.Start();
+            using (var ps = new PushService())
+            {
+                ps.Register<BilibiliPushService>();
+                ps.Start();
 
-            Console.ReadKey();
+                Console.ReadKey();
+                ps.Stop();
+            }
         }
     }
 }

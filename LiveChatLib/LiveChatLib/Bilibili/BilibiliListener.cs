@@ -11,17 +11,28 @@ using System.Threading.Tasks;
 
 namespace LiveChatLib.Bilibili
 {
-    class BilibiliListener : ILiveChatListener
+    public class BilibiliListener : ILiveChatListener
     {
+        private DateTime LastSendHeartBeatTime { get; set; }
+        private DateTime LastReceiveTime { get; set; }
+        private const int HeartBeatDuration = 30000;
+        private const int HeartBeatTimeout = 3000;
+
+
         public int LiveRoomID { get; set; }
         public FixedSizedQueue<BilibiliMessage> MessageQueue { get; set; }
         public delegate void ProcessMessageHandler(MessageBase message);
         public event ProcessMessageHandler OnProcessMessage;
+        public delegate void BadCommunicationHandler(WebSocketSharp.WebSocket client);
+        public event BadCommunicationHandler OnBadCommunication;
+        public ListenerState State { get; private set; }
+
 
 
         public BilibiliListener()
         {
             var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config/bilibili.config");
+            State = ListenerState.Disconnected;
             try
             {
                 var json = JToken.Parse(File.ReadAllText(path));
@@ -56,26 +67,67 @@ namespace LiveChatLib.Bilibili
 
             using (var ws = new WebSocketSharp.WebSocket("wss://broadcastlv.chat.bilibili.com/sub"))
             {
-                ws.Connect();
+                State = ListenerState.Connecting;
+                do
+                {
+                    if (ws.ReadyState != WebSocketSharp.WebSocketState.Open && ws.ReadyState != WebSocketSharp.WebSocketState.Connecting)
+                    {
+                        ws.Connect();
+                        Thread.Sleep(1000);
+                    }
+                } while (ws.ReadyState != WebSocketSharp.WebSocketState.Open);
+
                 // Initialize
                 var package = PackageBuilder.MakeAuthPackage(0, id);
                 ws.OnMessage += Ws_OnMessage;
-
                 var bytes = package.ToByteArray();
                 ws.Send(bytes);
 
+                // When the connection is not bad, default action.
+                // Reconnect to the live room and resend the auto package.
+                OnBadCommunication += c =>
+                {
+                    c.Close();
+
+                    State = ListenerState.Connecting;
+                    do
+                    {
+                        if (ws.ReadyState == WebSocketSharp.WebSocketState.Closed)
+                        {
+                            ws.Connect();
+                            Thread.Sleep(1000);
+                        }
+                    } while (ws.ReadyState != WebSocketSharp.WebSocketState.Open);
+                    var p = PackageBuilder.MakeAuthPackage(0, id);
+                    c.Send(p.ToByteArray());
+                };
+
+                // Main loop
                 while (!StopListenToken)
                 {
-                    Thread.Sleep(30000);
-                    var heartbeat = PackageBuilder.MakeHeatBeat();
-                    ws.Send(heartbeat.ToByteArray());
+                    Thread.Sleep(1000);
+                    if (DateTime.Now.Subtract(LastSendHeartBeatTime).TotalMilliseconds >= HeartBeatDuration)
+                    {
+                        var heartbeat = PackageBuilder.MakeHeatBeat();
+                        ws.Send(heartbeat.ToByteArray());
+                        LastSendHeartBeatTime = DateTime.Now;
+                    }
+                    if ((LastReceiveTime.AddMilliseconds(HeartBeatTimeout) < LastSendHeartBeatTime))
+                    {
+                        State = ListenerState.BadCommunication;
+                        OnBadCommunication(ws);
+                    }
                 }
+
                 ws.Close();
+                State = ListenerState.Disconnected;
             }
         }
 
         private async void Ws_OnMessage(object sender, WebSocketSharp.MessageEventArgs e)
         {
+            LastReceiveTime = DateTime.Now;
+
             foreach (var m in PackageParser.GetPackages(e.RawData))
             {
                 await KeepMessage(new BilibiliMessage(m));

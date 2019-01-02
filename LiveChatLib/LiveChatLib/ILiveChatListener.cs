@@ -10,4 +10,12 @@ namespace LiveChatLib
         void LoopListening(ref bool stoptoken);
         Task KeepMessage(MessageBase message);
     }
+
+    public enum ListenerState
+    {
+        Disconnected,
+        Connecting,
+        Connected,
+        BadCommunication
+    }
 }
