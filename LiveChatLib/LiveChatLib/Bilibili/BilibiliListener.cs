@@ -4,6 +4,8 @@ using LiveChatLib.Helpers;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -17,7 +19,8 @@ namespace LiveChatLib.Bilibili
         public FixedSizedQueue<BilibiliMessage> MessageQueue { get; set; }
         public delegate void ProcessMessageHandler(MessageBase message);
         public event ProcessMessageHandler OnProcessMessage;
-
+        public delegate void ProcessUserHandler(User user);
+        public event ProcessUserHandler OnProcessUser;
 
         public BilibiliListener()
         {
@@ -33,18 +36,31 @@ namespace LiveChatLib.Bilibili
         public async Task KeepMessage(MessageBase message)
         {
             var bmsg = message as BilibiliMessage;
-            if (bmsg.MsgType != MessageType.System)
+            if (bmsg.MsgType == MessageType.Unknown)
             {
+                return;
+            }
+
+            var user = Database.PickUserInformation(bmsg.SenderId);
+            if (user != null && !string.IsNullOrEmpty(user.Face))
+            {
+                bmsg.AvatarUrl = user.Face;
+
+                Database.KeepMessage(bmsg);
+                OnProcessMessage(message);
+            }
+            else
+            {
+                Database.KeepMessage(bmsg);
+                OnProcessMessage(message);
                 if (string.IsNullOrEmpty(bmsg.AvatarUrl))
                 {
                     if (bmsg.Meta.ContainsKey("uid"))
                     {
-                        await CacheUser(bmsg.Meta["uid"]);
+                        await CacheUser(bmsg.Meta["uid"], u => OnProcessUser(u));
                     }
                 }
             }
-            Database.KeepMessage(bmsg);
-            OnProcessMessage(message);
         }
 
         public void LoopListening(ref bool StopListenToken)
@@ -89,7 +105,7 @@ namespace LiveChatLib.Bilibili
             ws.SendAsync(data, null);
         }
 
-        private async Task<User> CacheUser(string uid)
+        private async Task<User> CacheUser(string uid, Action<User> Callback = null)
         {
             // Pick user if exists and skip caching.
             var inDB = Database.PickUserInformation(Convert.ToInt32(uid));
@@ -123,19 +139,38 @@ namespace LiveChatLib.Bilibili
                     headers: headers,
                     encoding: Encoding.UTF8
                 );
+            var json = JToken.Parse(result);
+            var face64 = "";
+
+            // Download avatar.
+            if (json["data"]?["face"] != null)
+            {
+                var facedata = await HttpRequests.DownloadBytes(json["data"]["face"].ToString());
+                var bitmap = ImageOptimize.ResizeImage(Image.FromStream(new MemoryStream(facedata)), 64, 64);
+                using (var ms = new MemoryStream()) {
+                    bitmap.Save(ms, ImageFormat.Jpeg);
+                    ms.Flush();
+                    face64 = Convert.ToBase64String(ms.ToArray());
+                }
+            }
 
             // Save the data.
-            var json = JToken.Parse(result);
             var user = new User
             {
-                BirthDay = json["data"]["birthday"].ToString(),
-                Face = json["data"]["face"].ToString(),
-                Level = json["data"]["level_info"]?["current_level"].ToObject<int>() ?? -1,
-                Id = json["data"]["mid"].ToObject<int>(),
-                Name = json["data"]["name"].ToString(),
-                Sex = json["data"]["sex"].ToString()
+                BirthDay = json["data"]["birthday"]?.ToString() ?? "保密",
+                Face = json["data"]["face"]?.ToString() ?? "",
+                FaceBase64 = face64 ?? "",
+                Level = json["data"]["level_info"]?["current_level"]?.ToObject<int>() ?? -1,
+                Id = json["data"]["mid"]?.ToObject<int>() ?? 0,
+                Name = json["data"]["name"]?.ToString() ?? "",
+                Sex = json["data"]["sex"]?.ToString() ?? "保密"
             };
+            if (user.Id == 0)
+            {
+                return null;
+            }
             Database.SaveUserInformation(user);
+            Callback(user);
             return user;
         }
     }

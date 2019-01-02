@@ -1,9 +1,11 @@
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using WebSocketSharp;
 using WebSocketSharp.Server;
@@ -13,9 +15,29 @@ namespace LiveChatLib
     public class PushService : IDisposable
     {
         public readonly WebSocketServer WsService;
-        public static readonly IList<IPushService> Services = new List<IPushService>();
-        public static readonly IList<Task> RunningTask = new List<Task>();
+        public readonly IList<IPushService> Services = new List<IPushService>();
+        public readonly IList<Task> RunningTask = new List<Task>();
+        
         public bool IsRunning;
+
+        private static PushService _instance;
+        private static object _instanceLock = new object();
+        public static PushService Current
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    lock (_instanceLock)
+                    {
+                        if (_instance == null) {
+                            _instance = new PushService();
+                        }
+                    }
+                }
+                return _instance;
+            }
+        }
 
         public PushService()
         {
@@ -86,31 +108,32 @@ namespace LiveChatLib
 
     public class ChatLogApp : WebSocketBehavior
     {
-        public void SendMessage(string message)
-        {
-            SendAsync(Encoding.UTF8.GetBytes(message), null);
-        }
-
         protected override void OnOpen()
         {
             var tasks = new List<Task>();
-            foreach(var s in PushService.Services)
+            foreach(var s in PushService.Current.Services)
             {
-                tasks.Add(Task.Factory.StartNew(()=>s.OnWebSocketOpen(this)));
+                tasks.Add(Task.Factory.StartNew(()=>s.OnWebSocketOpen(this.Sessions, this.ID)));
             }
             Task.WaitAll(tasks.ToArray());
         }
 
         protected override void OnMessage(MessageEventArgs e)
         {
+            if (e.Data.Equals("ping"))
+            {
+                Send("pong");
+                return;
+            }
+
             var json = JToken.Parse(e.Data);
             var flag = json["flag"].ToString();
             var tasks = new List<Task>();
-            foreach (var s in PushService.Services)
+            foreach (var s in PushService.Current.Services)
             {
                 if (s.MessageFlag.Contains(flag))
                 {
-                    tasks.Add(Task.Factory.StartNew(() => s.OnReceiveMessage(this, json["data"])));
+                    tasks.Add(Task.Factory.StartNew(() => s.OnReceiveMessage(this.Sessions, this.ID, json)));
                 }
             }
             Task.WaitAll(tasks.ToArray());
@@ -122,8 +145,8 @@ namespace LiveChatLib
         string[] MessageFlag { get; }
         void OnServiceLoad();
         void OnServiceStop();
-        void OnWebSocketOpen(WebSocketBehavior app);
-        void OnReceiveMessage(WebSocketBehavior app, JToken data);
+        void OnWebSocketOpen(WebSocketSessionManager app, string id);
+        void OnReceiveMessage(WebSocketSessionManager app, string id, JToken data);
         void OnWork(WebSocketServer server);
     }
 }

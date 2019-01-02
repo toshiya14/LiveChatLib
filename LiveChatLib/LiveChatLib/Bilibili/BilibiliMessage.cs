@@ -17,6 +17,9 @@ namespace LiveChatLib.Bilibili
         [JsonProperty(PropertyName = "uid")]
         public int SenderId { get; private set; }
 
+        [JsonProperty(PropertyName = "from")]
+        public string From { get => "bili"; }
+
         public BilibiliMessage()
             : base() { }
 
@@ -63,7 +66,8 @@ namespace LiveChatLib.Bilibili
                         case "WELCOME":
                             this.Meta["uid"] = obj["data"]["uid"].ToString();
                             this.Meta["uname"] = obj["data"]["uname"].ToString();
-                            this.Meta["is_admin"] = obj["data"]["is_admin"].ToObject<bool>().ToString();
+                            this.Meta["is_admin"] = obj["data"]["isadmin"]?.ToObject<bool>().ToString() ??
+                                                    obj["data"]["is_admin"]?.ToObject<bool>().ToString() ?? "0";
                             this.Meta["is_vip"] = (obj["data"]["vip"] != null && obj["data"]["vip"].Value<int>() == 1).ToString();
                             this.Meta["is_svip"] = (obj["data"]["svip"] != null && obj["data"]["svip"].Value<int>() == 1).ToString();
                             this.SenderName = this.Meta["uname"];
@@ -109,7 +113,15 @@ namespace LiveChatLib.Bilibili
                             this.Comment = this.Meta["msg"];
                             this.SenderId = obj["info"][2][0].ToObject<int>();
                             break;
+
+                        default:
+                            this.MsgType = MessageType.Unknown;
+                            break;
                     }
+                    break;
+
+                default:
+                    this.MsgType = MessageType.Unknown;
                     break;
             }
         }
@@ -117,6 +129,7 @@ namespace LiveChatLib.Bilibili
 
     public enum MessageType
     {
+        Unknown,
         Danmaku,
         Gift,
         Welcome,

@@ -17,6 +17,9 @@ namespace LiveChatLib.Bilibili.Storage
         [JsonProperty(PropertyName = "face")]
         public string Face { get; set; }
 
+        [JsonProperty(PropertyName = "face64")]
+        public string FaceBase64 { get; set; }
+
         [JsonProperty(PropertyName = "birth")]
         public string BirthDay { get; set; }
 

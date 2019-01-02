@@ -1,4 +1,5 @@
 using LiteDB;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,6 +19,9 @@ namespace LiveChatLib.Bilibili.Storage
         /// <param name="user">The user.</param>
         public static void SaveUserInformation(User user)
         {
+            var fi = new FileInfo(UserDatabasePath);
+            fi.Directory.Create();
+
             using (var db = new LiteDatabase(UserDatabasePath))
             {
                 var users = db.GetCollection<User>("users");
@@ -48,6 +52,9 @@ namespace LiveChatLib.Bilibili.Storage
         /// <returns></returns>
         public static User PickUserInformation(int mid)
         {
+            var fi = new FileInfo(UserDatabasePath);
+            fi.Directory.Create();
+
             using (var db = new LiteDatabase(UserDatabasePath))
             {
                 var users = db.GetCollection<User>();
@@ -65,6 +72,9 @@ namespace LiveChatLib.Bilibili.Storage
 
         public static void KeepMessage(BilibiliMessage message)
         {
+            var fi = new FileInfo(ChatLogDatabasePath);
+            fi.Directory.Create();
+
             using (var db = new LiteDatabase(ChatLogDatabasePath))
             {
                 var chats = db.GetCollection<BilibiliMessage>();
@@ -77,17 +87,22 @@ namespace LiveChatLib.Bilibili.Storage
 
         public static IList<BilibiliMessage> FetchLatestComments(int count)
         {
+            var fi = new FileInfo(ChatLogDatabasePath);
+            fi.Directory.Create();
+            fi = new FileInfo(UserDatabasePath);
+            fi.Directory.Create();
+
             using (var db = new LiteDatabase(ChatLogDatabasePath))
             {
                 var chats = db.GetCollection<BilibiliMessage>();
                 var query = Query.And(
                                Query.All("ReceiveTime", Query.Descending),
                                Query.Or(
-                                   Query.EQ("MsgType", (int)MessageType.Danmaku),
-                                   Query.EQ("MsgType", (int)MessageType.Gift)
+                                   Query.EQ("MsgType", "Danmaku"),
+                                   Query.EQ("MsgType", "Gift")
                                )
                             );
-                var results = chats.Find(query, 0, 5);
+                var results = chats.Find(query, 0, count);
                 return results.ToList();
             }
         }

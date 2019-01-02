@@ -11,7 +11,7 @@ namespace LiveChatLib
         public Guid Id { get; set; }
 
         [JsonProperty(PropertyName = "avaurl")]
-        public string AvatarUrl { get; protected set; }
+        public string AvatarUrl { get; set; }
 
         [JsonProperty(PropertyName = "sender")]
         public string SenderName { get; protected set; }

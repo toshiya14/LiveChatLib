@@ -20,6 +20,15 @@ namespace LiveChatLib.Helpers
             return result;
         }
 
+        public static async Task<byte[]> DownloadBytes(string url) {
+            byte[] result;
+            using (var client = new WebClient())
+            {
+                result = await client.DownloadDataTaskAsync(url);
+            }
+            return result;
+        }
+
         public static async Task<string> Post(string url, Dictionary<string, string> formData, Dictionary<string, string> headers, Encoding encoding = null)
         {
             string result;

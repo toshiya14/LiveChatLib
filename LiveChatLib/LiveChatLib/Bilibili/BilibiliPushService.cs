@@ -7,18 +7,40 @@ namespace LiveChatLib.Bilibili
 {
     public class BilibiliPushService : IPushService
     {
-        public string[] MessageFlag {
-            get {
-                //return new string[] { "bilibili", "general" };
-                return new string[0];
+        public string[] MessageFlag
+        {
+            get
+            {
+                return new string[] { "bilibili", "general" };
             }
         }
 
         public bool StopToken = false;
 
-        public void OnReceiveMessage(WebSocketBehavior app, JToken data)
+        public void OnReceiveMessage(WebSocketSessionManager app, string cid, JToken data)
         {
-            // Do Nothing.
+            if (data["type"] != null && data["type"].ToString().Equals("query"))
+            {
+                if (data["query"] != null && data["query"].ToString().Equals("face"))
+                {
+                    var id = data["id"]?.ToObject<int>() ?? 0;
+                    if (id <= 0)
+                    {
+                        return;
+                    }
+                    var user = Database.PickUserInformation(id);
+                    if (!string.IsNullOrEmpty(user.FaceBase64))
+                    {
+                        app.SendTo(JsonConvert.SerializeObject(
+                            new
+                            {
+                                type = "user",
+                                data = new[] { user }
+                            }
+                        ), cid);
+                    }
+                }
+            }
         }
         public void OnServiceLoad()
         {
@@ -28,11 +50,10 @@ namespace LiveChatLib.Bilibili
         {
             StopToken = true;
         }
-        public void OnWebSocketOpen(WebSocketBehavior app)
+        public void OnWebSocketOpen(WebSocketSessionManager app, string cid)
         {
-            var chatapp = app as ChatLogApp;
             var results = Database.FetchLatestComments(5);
-            chatapp.SendMessage(JsonConvert.SerializeObject(new { type = "msg", data = results }));
+            app.Broadcast(JsonConvert.SerializeObject(new { type = "msg", data = results }));
         }
         public void OnWork(WebSocketServer server)
         {
@@ -46,6 +67,19 @@ namespace LiveChatLib.Bilibili
                             {
                                 type = "msg",
                                 data = new[] { message }
+                            }
+                        )
+                    );
+                };
+            listener.OnProcessUser +=
+                user =>
+                {
+                    server.WebSocketServices["/app"].Sessions.Broadcast(
+                        JsonConvert.SerializeObject(
+                            new
+                            {
+                                type = "user",
+                                data = new[] { user }
                             }
                         )
                     );
