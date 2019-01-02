@@ -24,23 +24,26 @@ namespace LiveChatLib.Bilibili.Storage
 
             using (var db = new LiteDatabase(UserDatabasePath))
             {
-                var users = db.GetCollection<User>("users");
-                var results = users.Find(x => x.Id == user.Id);
-                if (results.Count() == 0)
+                using (var db = new LiteDatabase(UserDatabasePath))
                 {
-                    users.Insert(user);
-                    users.EnsureIndex(x => x.Id);
-                    users.EnsureIndex(x => x.Name);
-                }
-                else
-                {
-                    var toUpdate = results.First();
-                    toUpdate.BirthDay = user.BirthDay;
-                    toUpdate.Face = user.Face;
-                    toUpdate.Level = user.Level;
-                    toUpdate.Name = user.Name;
-                    toUpdate.Sex = user.Sex;
-                    users.Update(toUpdate);
+                    var users = db.GetCollection<User>("users");
+                    var results = users.Find(x => x.Id == user.Id);
+                    if (results.Count() == 0)
+                    {
+                        users.Insert(user);
+                        users.EnsureIndex(x => x.Id);
+                        users.EnsureIndex(x => x.Name);
+                    }
+                    else
+                    {
+                        var toUpdate = results.First();
+                        toUpdate.BirthDay = user.BirthDay;
+                        toUpdate.Face = user.Face;
+                        toUpdate.Level = user.Level;
+                        toUpdate.Name = user.Name;
+                        toUpdate.Sex = user.Sex;
+                        users.Update(toUpdate);
+                    }
                 }
             }
         }
@@ -57,15 +60,18 @@ namespace LiveChatLib.Bilibili.Storage
 
             using (var db = new LiteDatabase(UserDatabasePath))
             {
-                var users = db.GetCollection<User>();
-                var results = users.Find(x => x.Id == mid);
-                if (results.Count() == 0)
+                using (var db = new LiteDatabase(UserDatabasePath))
                 {
-                    return null;
-                }
-                else
-                {
-                    return results.First();
+                    var users = db.GetCollection<User>();
+                    var results = users.Find(x => x.Id == mid);
+                    if (results.Count() == 0)
+                    {
+                        return null;
+                    }
+                    else
+                    {
+                        return results.First();
+                    }
                 }
             }
         }
@@ -77,11 +83,14 @@ namespace LiveChatLib.Bilibili.Storage
 
             using (var db = new LiteDatabase(ChatLogDatabasePath))
             {
-                var chats = db.GetCollection<BilibiliMessage>();
-                chats.Insert(message);
-                chats.EnsureIndex(x => x.SenderName);
-                chats.EnsureIndex(x => x.ReceiveTime);
-                chats.EnsureIndex(x => x.SenderId);
+                using (var db = new LiteDatabase(ChatLogDatabasePath))
+                {
+                    var chats = db.GetCollection<BilibiliMessage>();
+                    chats.Insert(message);
+                    chats.EnsureIndex(x => x.SenderName);
+                    chats.EnsureIndex(x => x.ReceiveTime);
+                    chats.EnsureIndex(x => x.SenderId);
+                }
             }
         }
 
@@ -106,6 +115,5 @@ namespace LiveChatLib.Bilibili.Storage
                 return results.ToList();
             }
         }
-
     }
 }

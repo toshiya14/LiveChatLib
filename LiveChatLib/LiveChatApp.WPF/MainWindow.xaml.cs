@@ -18,11 +18,11 @@ using System.Windows.Shapes;
 namespace LiveChatApp
 {
     /// <summary>
-    /// Main.xaml 的互動邏輯
+    /// MainWindow.xaml 的互動邏輯
     /// </summary>
-    public partial class Main : Window
+    public partial class MainWindow : Window
     {
-        public Main()
+        public MainWindow()
         {
             InitializeComponent();
 
