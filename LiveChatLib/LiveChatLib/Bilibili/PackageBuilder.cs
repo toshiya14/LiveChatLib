@@ -14,7 +14,7 @@ namespace LiveChatLib.Bilibili
                 platform = "web",
                 clientver = "1.5.10.1"
             };
-            var package = new Package(MsgType.Auth, JsonConvert.SerializeObject(body));
+            var package = new Package(MsgType.Auth, JsonConvert.SerializeObject(body,Formatting.None,new JsonSerializerSettings{NullValueHandling = NullValueHandling.Ignore}));
             return package;
         }
 

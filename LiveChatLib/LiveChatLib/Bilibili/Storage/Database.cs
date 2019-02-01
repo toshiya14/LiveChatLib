@@ -1,8 +1,10 @@
 using LiteDB;
+using LiveChatLib.Helpers;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace LiveChatLib.Bilibili.Storage
 {
@@ -57,7 +59,7 @@ namespace LiveChatLib.Bilibili.Storage
 
             using (var db = new LiteDatabase(UserDatabasePath))
             {
-                var users = db.GetCollection<User>();
+                var users = db.GetCollection<User>("users");
                 var results = users.Find(x => x.Id == mid);
                 if (results.Count() == 0)
                 {
@@ -87,7 +89,7 @@ namespace LiveChatLib.Bilibili.Storage
 
         }
 
-        public static IList<BilibiliMessage> FetchLatestComments(int count)
+        public static async Task<IList<BilibiliMessage>> FetchLatestComments(int count)
         {
             var fi = new FileInfo(ChatLogDatabasePath);
             fi.Directory.Create();
@@ -105,7 +107,18 @@ namespace LiveChatLib.Bilibili.Storage
                                )
                             );
                 var results = chats.Find(query, 0, count);
-                return results.ToList();
+
+                foreach (var i in results)
+                {
+                    var user = PickUserInformation(i.SenderId);
+                    if (user != null)
+                    {
+                        var facedata = await HttpRequests.DownloadBytes(user.Face);
+                        i.AvatarBase64 = ImageHelper.ConvertToJpegBase64(facedata);
+                    }
+                }
+
+                return results.Reverse().ToList();
             }
         }
     }

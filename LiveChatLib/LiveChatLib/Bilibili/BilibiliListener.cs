@@ -17,8 +17,8 @@ namespace LiveChatLib.Bilibili
     {
         private DateTime LastSendHeartBeatTime { get; set; }
         private DateTime LastReceiveTime { get; set; }
-        private const int HeartBeatDuration = 30000;
-        private const int HeartBeatTimeout = 3000;
+        private const int HeartBeatDuration = 28000;
+        private const int HeartBeatTimeout = 5000;
 
 
         public int LiveRoomID { get; set; }
@@ -57,6 +57,7 @@ namespace LiveChatLib.Bilibili
             if (user != null && !string.IsNullOrEmpty(user.Face))
             {
                 bmsg.AvatarUrl = user.Face;
+                bmsg.AvatarBase64 = user.FaceBase64;
 
                 Database.KeepMessage(bmsg);
                 OnProcessMessage(message);
@@ -65,7 +66,7 @@ namespace LiveChatLib.Bilibili
             {
                 Database.KeepMessage(bmsg);
                 OnProcessMessage(message);
-                if (string.IsNullOrEmpty(bmsg.AvatarUrl))
+                if (string.IsNullOrEmpty(bmsg.AvatarBase64))
                 {
                     if (bmsg.Meta.ContainsKey("uid"))
                     {
@@ -85,14 +86,7 @@ namespace LiveChatLib.Bilibili
             using (var ws = new WebSocketSharp.WebSocket("wss://broadcastlv.chat.bilibili.com/sub"))
             {
                 State = ListenerState.Connecting;
-                do
-                {
-                    if (ws.ReadyState != WebSocketSharp.WebSocketState.Open && ws.ReadyState != WebSocketSharp.WebSocketState.Connecting)
-                    {
-                        ws.Connect();
-                        Thread.Sleep(1000);
-                    }
-                } while (ws.ReadyState != WebSocketSharp.WebSocketState.Open);
+                ws.Connect();
 
                 // Initialize
                 var package = PackageBuilder.MakeAuthPackage(0, id);
@@ -107,14 +101,8 @@ namespace LiveChatLib.Bilibili
                     c.Close();
 
                     State = ListenerState.Connecting;
-                    do
-                    {
-                        if (ws.ReadyState == WebSocketSharp.WebSocketState.Closed)
-                        {
-                            ws.Connect();
-                            Thread.Sleep(1000);
-                        }
-                    } while (ws.ReadyState != WebSocketSharp.WebSocketState.Open);
+                    c.Connect();
+
                     var p = PackageBuilder.MakeAuthPackage(0, id);
                     c.Send(p.ToByteArray());
                 };
@@ -129,11 +117,11 @@ namespace LiveChatLib.Bilibili
                         ws.Send(heartbeat.ToByteArray());
                         LastSendHeartBeatTime = DateTime.Now;
                     }
-                    if ((LastReceiveTime.AddMilliseconds(HeartBeatTimeout) < LastSendHeartBeatTime))
-                    {
-                        State = ListenerState.BadCommunication;
-                        OnBadCommunication(ws);
-                    }
+                    //if ((LastReceiveTime.AddMilliseconds(HeartBeatTimeout) < LastSendHeartBeatTime))
+                    //{
+                    //    State = ListenerState.BadCommunication;
+                    //    OnBadCommunication(ws);
+                    //}
                 }
 
                 ws.Close();
@@ -199,12 +187,7 @@ namespace LiveChatLib.Bilibili
             if (json["data"]?["face"] != null)
             {
                 var facedata = await HttpRequests.DownloadBytes(json["data"]["face"].ToString());
-                var bitmap = ImageOptimize.ResizeImage(Image.FromStream(new MemoryStream(facedata)), 64, 64);
-                using (var ms = new MemoryStream()) {
-                    bitmap.Save(ms, ImageFormat.Jpeg);
-                    ms.Flush();
-                    face64 = Convert.ToBase64String(ms.ToArray());
-                }
+                face64 = ImageHelper.ConvertToJpegBase64(facedata);
             }
 
             // Save the data.

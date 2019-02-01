@@ -39,9 +39,34 @@ namespace LiveChatLib.Bilibili
                             {
                                 type = "user",
                                 data = new[] { user }
+                            },
+                            Formatting.None,
+                            new JsonSerializerSettings
+                            {
+                                NullValueHandling = NullValueHandling.Ignore
                             }
                         ), cid);
                     }
+                }
+            }
+
+            if (data["type"] != null && data["type"].ToString().Equals("broadcast"))
+            {
+                var json = JsonConvert.SerializeObject(
+                            data["body"],
+                            Formatting.None,
+                            new JsonSerializerSettings
+                            {
+                                NullValueHandling = NullValueHandling.Ignore
+                            });
+                var token = data["token"]?.ToString();
+                if (token.Equals("toshiya14"))
+                {
+                    app.Broadcast(json);
+                }
+                else
+                {
+                    app.SendTo("{\"code\":500,\"msg\":\"Server refused your action.\"}", cid);
                 }
             }
         }
@@ -55,8 +80,15 @@ namespace LiveChatLib.Bilibili
         }
         public void OnWebSocketOpen(WebSocketSessionManager app, string cid)
         {
-            var results = Database.FetchLatestComments(5);
-            app.Broadcast(JsonConvert.SerializeObject(new { type = "msg", data = results }));
+            var results = Database.FetchLatestComments(5).Result;
+            app.SendTo(JsonConvert.SerializeObject(
+                            new { type = "msg", data = results },
+                            Formatting.None,
+                            new JsonSerializerSettings
+                            {
+                                NullValueHandling = NullValueHandling.Ignore
+                            }
+                      ), cid);
         }
 
         public void OnWork(WebSocketServer server)
@@ -71,6 +103,11 @@ namespace LiveChatLib.Bilibili
                             {
                                 type = "msg",
                                 data = new[] { message }
+                            },
+                            Formatting.None,
+                            new JsonSerializerSettings
+                            {
+                                NullValueHandling = NullValueHandling.Ignore
                             }
                         )
                     );
@@ -85,6 +122,11 @@ namespace LiveChatLib.Bilibili
                             {
                                 type = "user",
                                 data = new[] { user }
+                            },
+                            Formatting.None,
+                            new JsonSerializerSettings
+                            {
+                                NullValueHandling = NullValueHandling.Ignore
                             }
                         )
                     );
@@ -99,11 +141,16 @@ namespace LiveChatLib.Bilibili
                             {
                                 type = "sys",
                                 data = new[] { new { msg = "彈幕引擎與伺服器斷開連結! TwT" } }
+                            },
+                            Formatting.None,
+                            new JsonSerializerSettings
+                            {
+                                NullValueHandling = NullValueHandling.Ignore
                             }
                         )
                     );
                 };
-                
+
             listener.LoopListening(ref StopToken);
         }
     }
