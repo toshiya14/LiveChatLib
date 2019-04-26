@@ -32,7 +32,7 @@ namespace LiveChatLib.Bilibili
                         return;
                     }
                     var user = Database.PickUserInformation(id);
-                    if (!string.IsNullOrEmpty(user.FaceBase64))
+                    if (!string.IsNullOrEmpty(user?.FaceBase64))
                     {
                         app.SendTo(JsonConvert.SerializeObject(
                             new

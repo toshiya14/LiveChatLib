@@ -1,9 +1,11 @@
 using LiveChatLib.Bilibili.Storage;
 using LiveChatLib.Common;
 using LiveChatLib.Helpers;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -35,6 +37,7 @@ namespace LiveChatLib.Bilibili
 
         public BilibiliListener()
         {
+            Trace.TraceInformation("BilibiliListener: Create bilibili comments listener.");
             var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config/bilibili.config");
             State = ListenerState.Disconnected;
             try
@@ -42,35 +45,55 @@ namespace LiveChatLib.Bilibili
                 var json = JToken.Parse(File.ReadAllText(path));
                 LiveRoomID = json["roomid"].ToObject<int>();
             }
-            catch { }
+            catch(Exception exc) {
+                Trace.TraceError("BilibiliListener: Failed to load config from " + path);
+                Trace.TraceError(exc.Message);
+                Trace.TraceError(exc.StackTrace);
+            }
         }
 
         public async Task KeepMessage(MessageBase message)
         {
+            Trace.TraceInformation("BilibiliListener: Keep a message into LiteDB.");
             var bmsg = message as BilibiliMessage;
             if (bmsg.MsgType == MessageType.Unknown)
             {
+                Trace.TraceInformation("BilibiliListener: MessageType: Unknown, skipped.");
                 return;
             }
 
             var user = Database.PickUserInformation(bmsg.SenderId);
             if (user != null && !string.IsNullOrEmpty(user.Face))
             {
+                Trace.TraceInformation("BilibiliListener: Get user face from database.");
                 bmsg.AvatarUrl = user.Face;
                 bmsg.AvatarBase64 = user.FaceBase64;
 
                 Database.KeepMessage(bmsg);
-                OnProcessMessage(message);
+
+                Trace.TraceInformation("BilibiliListener: Process Message.");
+                Trace.TraceInformation("BilibiliListener: Message: " + JsonConvert.SerializeObject(bmsg));
+                OnProcessMessage(bmsg);
             }
             else
             {
+                Trace.TraceInformation("BilibiliListener: Process Message.");
+                Trace.TraceInformation("BilibiliListener: Message: " + JsonConvert.SerializeObject(bmsg));
                 Database.KeepMessage(bmsg);
-                OnProcessMessage(message);
+                OnProcessMessage(bmsg);
                 if (string.IsNullOrEmpty(bmsg.AvatarBase64))
                 {
                     if (bmsg.Meta.ContainsKey("uid"))
                     {
-                        await CacheUser(bmsg.Meta["uid"], u => OnProcessUser(u));
+                        try
+                        {
+                            await CacheUser(bmsg.Meta["uid"], u => OnProcessUser(u));
+                        }
+                        catch (Exception exc) {
+                            Trace.TraceError("無法獲取用戶資訊 UID: " + bmsg.Meta["uid"]);
+                            Trace.TraceError(exc.Message);
+                            Trace.TraceError(exc.StackTrace);
+                        }
                     }
                 }
             }
@@ -110,12 +133,23 @@ namespace LiveChatLib.Bilibili
                 // Main loop
                 while (!StopListenToken)
                 {
+                    
                     Thread.Sleep(1000);
                     if (DateTime.Now.Subtract(LastSendHeartBeatTime).TotalMilliseconds >= HeartBeatDuration)
                     {
+                        Trace.TraceWarning("BilibiliListener: Heartbeat package sent.");
                         var heartbeat = PackageBuilder.MakeHeatBeat();
                         ws.Send(heartbeat.ToByteArray());
                         LastSendHeartBeatTime = DateTime.Now;
+                    }
+                    if (DateTime.Now.Subtract(LastSendHeartBeatTime).TotalMilliseconds >= HeartBeatDuration * 2)
+                    {
+                        ws.Close();
+                        Trace.TraceWarning("BilibiliListener: Lost connection, Reconnecting.");
+                        Thread.Sleep(5000);
+                        ws.Connect();
+                        Thread.Sleep(5000);
+                        continue;
                     }
                     //if ((LastReceiveTime.AddMilliseconds(HeartBeatTimeout) < LastSendHeartBeatTime))
                     //{
