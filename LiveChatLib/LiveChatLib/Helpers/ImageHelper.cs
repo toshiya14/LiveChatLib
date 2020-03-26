@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Text;
 
 namespace LiveChatLib.Helpers
 {
-    class ImageOptimize
+    class ImageHelper
     {
         /// <summary>
         /// Resize the image to the specified width and height.
@@ -39,6 +40,23 @@ namespace LiveChatLib.Helpers
             }
 
             return destImage;
+        }
+
+        /// <summary>
+        /// Convert byte image to base64 string.
+        /// </summary>
+        /// <param name="facedata"></param>
+        /// <returns></returns>
+        public static string ConvertToJpegBase64(byte[] facedata) {
+            var bitmap = ResizeImage(Image.FromStream(new MemoryStream(facedata)), 64, 64);
+            var result = "";
+            using (var ms = new MemoryStream())
+            {
+                bitmap.Save(ms, ImageFormat.Jpeg);
+                ms.Flush();
+                result = Convert.ToBase64String(ms.ToArray());
+            }
+            return result;
         }
     }
 }

@@ -13,6 +13,9 @@ namespace LiveChatLib
         [JsonProperty(PropertyName = "avaurl")]
         public string AvatarUrl { get; set; }
 
+        [JsonProperty(PropertyName = "ava64")]
+        public string AvatarBase64 { get; set; }
+
         [JsonProperty(PropertyName = "sender")]
         public string SenderName { get; protected set; }
 

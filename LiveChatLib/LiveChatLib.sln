@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28010.2050
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveChatLib.Standard", "LiveChatLib\LiveChatLib.Standard.csproj", "{B2056C1A-5160-4CCC-AFE2-3703342829D7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LiveChatLib.Standard", "LiveChatLib\LiveChatLib.Standard.csproj", "{B2056C1A-5160-4CCC-AFE2-3703342829D7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveChatTestConsole.Core", "LiveChatTestConsole.Core\LiveChatTestConsole.Core.csproj", "{C61DB0B6-9821-4C50-996E-0EAD2F4DEAC4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LiveChatTestConsole.Core", "LiveChatTestConsole.Core\LiveChatTestConsole.Core.csproj", "{C61DB0B6-9821-4C50-996E-0EAD2F4DEAC4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveChatApp.WPF", "LiveChatApp.WPF\LiveChatApp.WPF.csproj", "{2CB78E3D-6743-4393-9EE4-369098A72D75}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveChatTestConsole.Framework", "LiveChatTestConsole.Framework\LiveChatTestConsole.Framework.csproj", "{4CB1DFA2-042D-4250-8742-562DB3C6C9E3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,6 +43,14 @@ Global
 		{2CB78E3D-6743-4393-9EE4-369098A72D75}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2CB78E3D-6743-4393-9EE4-369098A72D75}.Release|x64.ActiveCfg = Release|x64
 		{2CB78E3D-6743-4393-9EE4-369098A72D75}.Release|x64.Build.0 = Release|x64
+		{4CB1DFA2-042D-4250-8742-562DB3C6C9E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4CB1DFA2-042D-4250-8742-562DB3C6C9E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4CB1DFA2-042D-4250-8742-562DB3C6C9E3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4CB1DFA2-042D-4250-8742-562DB3C6C9E3}.Debug|x64.Build.0 = Debug|Any CPU
+		{4CB1DFA2-042D-4250-8742-562DB3C6C9E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4CB1DFA2-042D-4250-8742-562DB3C6C9E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4CB1DFA2-042D-4250-8742-562DB3C6C9E3}.Release|x64.ActiveCfg = Release|Any CPU
+		{4CB1DFA2-042D-4250-8742-562DB3C6C9E3}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

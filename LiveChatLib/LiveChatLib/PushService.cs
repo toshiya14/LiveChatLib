@@ -118,23 +118,29 @@ namespace LiveChatLib
 
         protected override void OnMessage(MessageEventArgs e)
         {
-            if (e.Data.Equals("ping"))
+            try
             {
-                Send("pong");
-                return;
-            }
-
-            var json = JToken.Parse(e.Data);
-            var flag = json["flag"].ToString();
-            var tasks = new List<Task>();
-            foreach (var s in PushService.Current.Services)
-            {
-                if (s.MessageFlag.Contains(flag))
+                if (e.Data.Equals("ping"))
                 {
-                    tasks.Add(Task.Factory.StartNew(() => s.OnReceiveMessage(this.Sessions, this.ID, json)));
+                    Send("pong");
+                    return;
                 }
+
+                var json = JToken.Parse(e.Data);
+                var flag = json["flag"]?.ToString();
+                var tasks = new List<Task>();
+                foreach (var s in PushService.Current.Services)
+                {
+                    if (s.MessageFlag.Contains(flag))
+                    {
+                        tasks.Add(Task.Factory.StartNew(() => s.OnReceiveMessage(this.Sessions, this.ID, json)));
+                    }
+                }
+                Task.WaitAll(tasks.ToArray());
             }
-            Task.WaitAll(tasks.ToArray());
+            catch (Exception ex) {
+                Console.WriteLine("Error OnMessage: " + ex.Message);
+            }
         }
     }
 
