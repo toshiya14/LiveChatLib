@@ -1,4 +1,4 @@
-﻿using LiveChatLib.Helpers;
+using LiveChatLib.Helpers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,11 +16,13 @@ namespace LiveChatLib.Bilibili
         public static IEnumerable<Package> GetPackages(byte[] buffer)
         {
             var part = SplitBuffer(buffer);
+            var list = new List<Package>();
             foreach (var p in part)
             {
-                var package = new Package(p);
-                yield return package;
+                var package = Package.LoadFromByteArray(p);
+                list.AddRange(package);
             }
+            return list;
         }
 
         /// <summary>

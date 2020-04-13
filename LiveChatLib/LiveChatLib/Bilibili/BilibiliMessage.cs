@@ -51,7 +51,7 @@ namespace LiveChatLib.Bilibili
                     break;
 
                 case Bilibili.MsgType.Command:
-                    var obj = JToken.Parse(package.Content);
+                    var obj = JToken.Parse(package.Content.Trim());
                     switch (obj["cmd"].ToString().ToUpper())
                     {
                         case "WELCOME_GUARD":
@@ -106,7 +106,7 @@ namespace LiveChatLib.Bilibili
                             this.Meta["flag1"] = obj["info"][2][2].ToObject<int>().ToString();
                             this.Meta["flag2"] = obj["info"][2][3].ToObject<int>().ToString();
                             this.Meta["flag3"] = obj["info"][2][4].ToObject<int>().ToString();
-                            this.Meta["timestamp"] = obj["info"][0][4].ToObject<int>().ToString();
+                            this.Meta["timestamp"] = obj["info"][0][4].ToObject<long>().ToString();
                             this.Meta["msg"] = obj["info"][1].ToString();
                             this.SenderName = this.Meta["uname"];
                             this.MsgType = MessageType.Danmaku;

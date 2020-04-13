@@ -5,14 +5,15 @@ namespace LiveChatLib.Bilibili
 {
     public static class PackageBuilder
     {
-        public static Package MakeAuthPackage(long uid, long roomid)
+        public static Package MakeAuthPackage(long uid, long roomid, string token)
         {
             var body = new {
                 uid = uid,
                 roomid = roomid,
-                protover = 1,
+                protover = 2,
                 platform = "web",
-                clientver = "1.5.10.1"
+                clientver= "1.10.6",
+                key = token
             };
             var package = new Package(MsgType.Auth, JsonConvert.SerializeObject(body,Formatting.None,new JsonSerializerSettings{NullValueHandling = NullValueHandling.Ignore}));
             return package;

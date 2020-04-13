@@ -21,6 +21,7 @@ namespace LiveChatLib.Bilibili
         private DateTime LastReceiveTime { get; set; }
         private const int HeartBeatDuration = 28000;
         private const int HeartBeatTimeout = 5000;
+        private bool waitBack = false;
 
 
         public int LiveRoomID { get; set; }
@@ -54,12 +55,16 @@ namespace LiveChatLib.Bilibili
 
         public async Task KeepMessage(MessageBase message)
         {
-            Trace.TraceInformation("BilibiliListener: Keep a message into LiteDB.");
             var bmsg = message as BilibiliMessage;
+            var traceLog = true;
             if (bmsg.MsgType == MessageType.Unknown)
             {
                 Trace.TraceInformation("BilibiliListener: MessageType: Unknown, skipped.");
                 return;
+            }
+            if (bmsg.Meta.ContainsKey("renqi"))
+            {
+                traceLog = false;
             }
 
             var user = Database.PickUserInformation(bmsg.SenderId);
@@ -71,14 +76,20 @@ namespace LiveChatLib.Bilibili
 
                 Database.KeepMessage(bmsg);
 
-                Trace.TraceInformation("BilibiliListener: Process Message.");
-                Trace.TraceInformation("BilibiliListener: Message: " + JsonConvert.SerializeObject(bmsg));
+                if (traceLog)
+                {
+                    Trace.TraceInformation("BilibiliListener: Received Message.");
+                    Trace.TraceInformation("BilibiliListener: Message: " + JsonConvert.SerializeObject(bmsg));
+                }
                 OnProcessMessage(bmsg);
             }
             else
             {
-                Trace.TraceInformation("BilibiliListener: Process Message.");
-                Trace.TraceInformation("BilibiliListener: Message: " + JsonConvert.SerializeObject(bmsg));
+                if (traceLog)
+                {
+                    Trace.TraceInformation("BilibiliListener: Received Message.");
+                    Trace.TraceInformation("BilibiliListener: Message: " + JsonConvert.SerializeObject(bmsg));
+                }
                 Database.KeepMessage(bmsg);
                 OnProcessMessage(bmsg);
                 if (string.IsNullOrEmpty(bmsg.AvatarBase64))
@@ -102,9 +113,14 @@ namespace LiveChatLib.Bilibili
         public void LoopListening(ref bool StopListenToken)
         {
             // Get Room ID.
-            var json = HttpRequests.DownloadString(@"https://api.live.bilibili.com/room/v1/Room/room_init?id=" + LiveRoomID).Result;
-            var jobj = JToken.Parse(json);
+            var txt = HttpRequests.DownloadString(@"https://api.live.bilibili.com/room/v1/Room/room_init?id=" + LiveRoomID).Result;
+            var jobj = JToken.Parse(txt);
             var id = jobj["data"]["room_id"].ToObject<int>();
+
+            // Get Room token.
+            txt = HttpRequests.DownloadString(@"https://api.live.bilibili.com/room/v1/Danmu/getConf?room_id=" + LiveRoomID).Result;
+            jobj = JToken.Parse(txt);
+            var token = jobj["data"]["token"].ToString();
 
             using (var ws = new WebSocketSharp.WebSocket("wss://broadcastlv.chat.bilibili.com/sub"))
             {
@@ -112,7 +128,8 @@ namespace LiveChatLib.Bilibili
                 ws.Connect();
 
                 // Initialize
-                var package = PackageBuilder.MakeAuthPackage(0, id);
+                var package = PackageBuilder.MakeAuthPackage(0, id, token);
+                Trace.TraceWarning($"BilibiliListener: Connecting:{id}...");
                 ws.OnMessage += Ws_OnMessage;
                 var bytes = package.ToByteArray();
                 ws.Send(bytes);
@@ -122,40 +139,43 @@ namespace LiveChatLib.Bilibili
                 OnBadCommunication += c =>
                 {
                     c.Close();
-
-                    State = ListenerState.Connecting;
                     c.Connect();
-
-                    var p = PackageBuilder.MakeAuthPackage(0, id);
-                    c.Send(p.ToByteArray());
+                    while (true)
+                    {
+                        if (c.ReadyState == WebSocketSharp.WebSocketState.Open)
+                        {
+                            var p = PackageBuilder.MakeAuthPackage(0, id, token);
+                            c.Send(p.ToByteArray());
+                            LastSendHeartBeatTime = DateTime.Now;
+                            State = ListenerState.Connected;
+                            Trace.TraceWarning("BilibiliListener: Reconnected.");
+                            break;
+                        }
+                        else
+                        {
+                            Trace.TraceWarning("BilibiliListener: Retry after 3 seconds.");
+                            Thread.Sleep(3000);
+                        }
+                    }
                 };
 
                 // Main loop
                 while (!StopListenToken)
                 {
-                    
                     Thread.Sleep(1000);
                     if (DateTime.Now.Subtract(LastSendHeartBeatTime).TotalMilliseconds >= HeartBeatDuration)
                     {
-                        Trace.TraceWarning("BilibiliListener: Heartbeat package sent.");
                         var heartbeat = PackageBuilder.MakeHeatBeat();
                         ws.Send(heartbeat.ToByteArray());
                         LastSendHeartBeatTime = DateTime.Now;
+                        waitBack = true;
                     }
-                    if (DateTime.Now.Subtract(LastSendHeartBeatTime).TotalMilliseconds >= HeartBeatDuration * 2)
+                    if (waitBack && DateTime.Now.Subtract(LastSendHeartBeatTime).TotalMilliseconds >= HeartBeatTimeout)
                     {
-                        ws.Close();
-                        Trace.TraceWarning("BilibiliListener: Lost connection, Reconnecting.");
-                        Thread.Sleep(5000);
-                        ws.Connect();
-                        Thread.Sleep(5000);
-                        continue;
+                        State = ListenerState.BadCommunication;
+                        Trace.TraceWarning("BilibiliListener: Bad communication, retrying.");
+                        OnBadCommunication?.Invoke(ws);
                     }
-                    //if ((LastReceiveTime.AddMilliseconds(HeartBeatTimeout) < LastSendHeartBeatTime))
-                    //{
-                    //    State = ListenerState.BadCommunication;
-                    //    OnBadCommunication(ws);
-                    //}
                 }
 
                 ws.Close();
@@ -165,17 +185,26 @@ namespace LiveChatLib.Bilibili
 
         private async void Ws_OnMessage(object sender, WebSocketSharp.MessageEventArgs e)
         {
+            waitBack = false;
             LastReceiveTime = DateTime.Now;
 
             foreach (var m in PackageParser.GetPackages(e.RawData))
             {
-                await KeepMessage(new BilibiliMessage(m));
+                try
+                {
+                    await KeepMessage(new BilibiliMessage(m));
+                }catch(Exception ex)
+                {
+                    Trace.TraceError(ex.Message);
+                    Trace.TraceError(ex.StackTrace);
+                    Trace.TraceError("================================");
+                }
             }
         }
 
         private void SendHeartBeat(WebSocketSharp.WebSocket ws)
         {
-            var package = new Package(MsgType.ClientHeart, new byte[0]);
+            var package = new Package(MsgType.ClientHeart, "");
             var data = package.Body;
             ws.SendAsync(data, null);
         }
