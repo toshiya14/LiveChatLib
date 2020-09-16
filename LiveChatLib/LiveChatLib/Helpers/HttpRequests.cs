@@ -10,11 +10,19 @@ namespace LiveChatLib.Helpers
     public class HttpRequests
     {
 
-        public static async Task<string> DownloadString(string url)
+        public static async Task<string> DownloadString(string url, Dictionary<string, string> headers = null, Encoding encoding = null)
         {
             string result;
             using (var client = new WebClient())
             {
+                client.Encoding = encoding ?? Encoding.UTF8;
+                if (headers != null && headers.Count > 0)
+                {
+                    foreach (var header in headers)
+                    {
+                        client.Headers.Add(header.Key, header.Value);
+                    }
+                }
                 result = await client.DownloadStringTaskAsync(url);
             }
             return result;

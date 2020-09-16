@@ -13,6 +13,7 @@ namespace LiveChatLib.Bilibili.Storage
         private static readonly string DatabaseHomeFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"db");
         private static readonly string UserDatabasePath = Path.Combine(DatabaseHomeFolder, @"user.db");
         private static readonly string ChatLogDatabasePath = Path.Combine(DatabaseHomeFolder, @"chatlog/" + DateTime.Now.ToString("yyyy-MM-dd") + @".db");
+        private static readonly string SampleDatabasePath = Path.Combine(DatabaseHomeFolder, @"samples/" + DateTime.Now.ToString("yyyy-MM-dd") + @".db");
 
         /// <summary>
         /// Saves the user information.
@@ -87,6 +88,18 @@ namespace LiveChatLib.Bilibili.Storage
                 chats.EnsureIndex(x => x.SenderId);
             }
 
+        }
+
+        public static void CollectSample(Package package)
+        {
+            var fi = new FileInfo(SampleDatabasePath);
+            fi.Directory.Create();
+
+            using(var db = new LiteDatabase(SampleDatabasePath))
+            {
+                var cols = db.GetCollection<Package>();
+                cols.Insert(package);
+            }
         }
 
         public static async Task<IList<BilibiliMessage>> FetchLatestComments(int count)

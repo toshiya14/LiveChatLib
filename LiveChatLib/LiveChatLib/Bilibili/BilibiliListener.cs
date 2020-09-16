@@ -57,11 +57,7 @@ namespace LiveChatLib.Bilibili
         {
             var bmsg = message as BilibiliMessage;
             var traceLog = true;
-            if (bmsg.MsgType == MessageType.Unknown)
-            {
-                Trace.TraceInformation("BilibiliListener: MessageType: Unknown, skipped.");
-                return;
-            }
+
             if (bmsg.Meta.ContainsKey("renqi"))
             {
                 traceLog = false;
@@ -139,8 +135,10 @@ namespace LiveChatLib.Bilibili
                 OnBadCommunication += c =>
                 {
                     c.Close();
+                    Thread.Sleep(1000);
                     c.Connect();
-                    while (true)
+                    var counter = 3;
+                    while (counter-- > 0)
                     {
                         if (c.ReadyState == WebSocketSharp.WebSocketState.Open)
                         {
@@ -149,7 +147,7 @@ namespace LiveChatLib.Bilibili
                             LastSendHeartBeatTime = DateTime.Now;
                             State = ListenerState.Connected;
                             Trace.TraceWarning("BilibiliListener: Reconnected.");
-                            break;
+                            return;
                         }
                         else
                         {
@@ -163,7 +161,7 @@ namespace LiveChatLib.Bilibili
                 while (!StopListenToken)
                 {
                     Thread.Sleep(1000);
-                    if (DateTime.Now.Subtract(LastSendHeartBeatTime).TotalMilliseconds >= HeartBeatDuration)
+                    if (ws.ReadyState == WebSocketSharp.WebSocketState.Open && DateTime.Now.Subtract(LastSendHeartBeatTime).TotalMilliseconds >= HeartBeatDuration)
                     {
                         var heartbeat = PackageBuilder.MakeHeatBeat();
                         ws.Send(heartbeat.ToByteArray());
@@ -192,7 +190,16 @@ namespace LiveChatLib.Bilibili
             {
                 try
                 {
-                    await KeepMessage(new BilibiliMessage(m));
+                    var msg = new BilibiliMessage(m);
+                    if (msg.MsgType == MessageType.Unknown)
+                    {
+                        Trace.TraceInformation("BilibiliListener: MessageType: Unknown, skipped.");
+                        Database.CollectSample(m);
+                    }
+                    else
+                    {
+                        await KeepMessage(new BilibiliMessage(m));
+                    }
                 }catch(Exception ex)
                 {
                     Trace.TraceError(ex.Message);
@@ -218,28 +225,16 @@ namespace LiveChatLib.Bilibili
                 return inDB;
             }
 
-            // Call api to get user information.
-            var random = new Random();
+            //Call api to get user information.
             var headers = new Dictionary<string, string> {
                 {             "User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36" },
-                {       "X-Requested-With", "XMLHttpRequest" },
-                {                "Referer", "http://space.bilibili.com/"+uid+"?from=search&seid="+random.Next(10000,50000) },
-                {                 "Origin", "http://space.bilibili.com" },
-                {                   "Host", "space.bilibili.com" },
-                { "AlexaToolbar-ALX_NS_PH", "AlexaToolbar/alx-4.0" },
-                {        "Accept-Language", "zh-CN,zh;q=0.8,en;q=0.6,ja;q=0.4" },
-                {                 "Accept", "application/json, text/javascript, */*; q=0.01" }
-            };
-            var formData = new Dictionary<string, string>
-            {
-                {   "_", ((int)DateTime.UtcNow.Subtract(new DateTime(1970,1,1)).TotalMilliseconds).ToString() },
-                { "mid", uid }
+                {                "Referer", "http://m.bilibili.com"},
+                {                 "Origin", "http://m.bilibili.com" },
             };
 
             // Post and get data from API.
-            var result = await HttpRequests.Post(
-                    url: "http://space.bilibili.com/ajax/member/GetInfo",
-                    formData: formData,
+            var result = await HttpRequests.DownloadString(
+                    url: "https://api.bilibili.com/x/space/acc/info?mid=" + uid,
                     headers: headers,
                     encoding: Encoding.UTF8
                 );

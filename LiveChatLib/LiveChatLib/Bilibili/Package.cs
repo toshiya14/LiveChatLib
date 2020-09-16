@@ -8,6 +8,7 @@ namespace LiveChatLib.Bilibili
 {
     public class Package
     {
+        public Guid _id { get; set; }
         public int Length { get { return HeadLength + Body.Length; } }
         public short HeadLength { get; private set; }
         public short ProtoVer { get; private set; }
@@ -150,6 +151,6 @@ namespace LiveChatLib.Bilibili
         Renqi = 0x03,
         Command = 0x05,
         Auth = 0x07,
-        ServerHeart = 0x08
+        ServerHeart = 0x08,
     }
 }

@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Runtime;
 
 namespace LiveChatLib.Bilibili
 {
@@ -75,6 +76,15 @@ namespace LiveChatLib.Bilibili
                             this.SenderId = obj["data"]["uid"].ToObject<int>();
                             break;
 
+                        case "INTERACT_WORD":
+                            this.Meta["cmd"] = "INTERACT_WORD";
+                            this.Meta["uid"] = obj["data"]["uid"].ToString();
+                            this.Meta["uname"] = obj["data"]["uname"].ToString();
+                            this.SenderName = this.Meta["uname"];
+                            this.MsgType = MessageType.Welcome;
+                            this.SenderId = obj["data"]["uid"].ToObject<int>();
+                            break;
+
                         case "SEND_GIFT":
                             this.Meta["uid"] = obj["data"]["uid"].ToString();
                             this.Meta["uname"] = obj["data"]["uname"].ToString();
@@ -91,12 +101,14 @@ namespace LiveChatLib.Bilibili
                         case "PREPARING":
                             this.Meta["roomid"] = obj["roomid"].ToString();
                             this.SenderName = "server";
+                            this.Meta["action"] = "CLOSE";
                             this.MsgType = MessageType.System;
                             break;
 
                         case "LIVE":
                             this.Meta["roomid"] = obj["roomid"].ToString();
                             this.SenderName = "server";
+                            this.Meta["action"] = "OPEN";
                             this.MsgType = MessageType.System;
                             break;
 
@@ -112,6 +124,12 @@ namespace LiveChatLib.Bilibili
                             this.MsgType = MessageType.Danmaku;
                             this.Comment = this.Meta["msg"];
                             this.SenderId = obj["info"][2][0].ToObject<int>();
+                            break;
+
+                        case "NOTICE_MSG":
+                            this.SenderName = "server";
+                            this.Meta["action"] = "BROADCAST";
+                            this.MsgType = MessageType.System;
                             break;
 
                         default:
