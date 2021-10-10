@@ -1,3 +1,4 @@
+using LiteDB;
 using LiveChatLib.Helpers;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,8 @@ namespace LiveChatLib.Bilibili
         public MsgType MessageType { get; private set; }
         public int Sequence { get; private set; }
         public byte[] Body { get; private set; }
+
+        [BsonIgnore]
         public Encoding BodyEncoding { get; set; }
         public string Content { get => BodyEncoding.GetString(Body); set => Body = BodyEncoding.GetBytes(value); }
         public bool MultiMessage { get; private set; } = false;

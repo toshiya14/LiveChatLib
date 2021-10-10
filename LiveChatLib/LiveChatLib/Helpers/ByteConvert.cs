@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace LiveChatLib.Helpers
@@ -70,6 +71,24 @@ namespace LiveChatLib.Helpers
             }
             var result = BitConverter.ToInt64(copy, 0);
             return result;
+        }
+
+        public static string DisplayBytes(this byte[] buffer)
+        {
+            var start = 0;
+            var end = buffer.Length < 16 ? buffer.Length : 16;
+            var line = 0;
+            var sb = new StringBuilder();
+            while(start < buffer.Length)
+            {
+                var part = buffer.Skip(start).Take(end - start);
+                sb.AppendLine($"0x{line:X8} {string.Join(" ", part.Select(x => x.ToString("X2")))}");
+                // move start and end
+                start = end + 1;
+                end = start + 16;
+                line += 1;
+            }
+            return sb.ToString();
         }
     }
 }

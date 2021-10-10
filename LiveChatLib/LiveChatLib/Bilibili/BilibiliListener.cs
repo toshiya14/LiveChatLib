@@ -193,7 +193,7 @@ namespace LiveChatLib.Bilibili
                     var msg = new BilibiliMessage(m);
                     if (msg.MsgType == MessageType.Unknown)
                     {
-                        Trace.TraceInformation("BilibiliListener: MessageType: Unknown, skipped.");
+                        // Trace.TraceInformation("BilibiliListener: MessageType: Unknown, skipped.");
                         Database.CollectSample(m);
                     }
                     else
